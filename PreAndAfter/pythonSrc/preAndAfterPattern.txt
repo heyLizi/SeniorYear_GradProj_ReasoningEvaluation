@@ -1,0 +1,110 @@
+ def analysisContent(self):
+        Hangs = self.content.split('\n')
+        Hangs = [self.content] if len(Hangs) < 1 else Hangs
+
+        SENTENCE_STATE = {
+            'qianjian_f': 1,
+            'qianjian_c': 2,
+            'houcheng_f': 3,
+            'houcheng_c': 4
+        }
+
+        parttens = {
+            '(.*?)的$':0,
+            '^对于*(.*?)$':1,
+            '为了(.*)':2,             
+            '^除(.*)以外$':3,	      
+
+            '^(.*?)适用(.*)$':4,  # 4
+            '^(.*?)可以(.*)':5,
+            '^(.*?)应当(.*)':6,
+            '^(.*?)并应(.*)':6,
+            '^(.*?)依照(.*)':7,
+            '^(.*?)按照(.*)':8,
+            '^(.*?)不得(.*)':9,
+            '^都(.*)$':10,
+            '为(.*)':11,
+            '属于(.*)':12,
+            '^(.*)是(.*)$':13,
+    }
+        for Hang in Hangs:
+            if (len(Hang) <= 1):
+                continue
+            Duans = re.split('[；。]', Hang)
+
+            Duans = [Hang] if len(Duans) < 1 else Duans
+
+            for Duan in Duans:
+                if (len(Duan) <= 1):
+                    continue
+                Jus = Duan.split('，')
+
+                Jus = [Duan] if len(Jus) < 1 else Jus
+                QianTi = []
+                HouCheng = []
+                last = ''
+                for Ju in Jus:
+
+                    if len(Ju) <= 1:
+                        continue
+                    MatchFlag = False
+                    for p in parttens:
+                        mat = re.match(p, Ju)
+                        if mat is not None:
+                            MatchFlag = True
+                            if parttens[p] == 0:  # 。。。的 情况
+
+                                if last.endswith('2'):
+                                    line = {
+                                        'QianTi': QianTi,
+                                        'HouCheng': HouCheng
+                                    }
+                                    self.rules.append(line)
+                                    QianTi = []
+                                    HouCheng = []
+                                QianTi.append(mat.group(0))
+
+                                last = '1'
+                                break
+
+                            elif parttens[p] == 1:  # 对于。。。 情况
+                                QianTi.append(mat.group(0))
+                                last = last + '1'
+                                break
+
+                            elif parttens[p] == 2:  # 为了。。。 情况
+                                QianTi.append(mat.group(0))
+                                last = last + '1'
+                                break
+
+                            elif parttens[p] == 3:  # 为了。。。 情况
+                                QianTi.append(mat.group(0))
+                                last = last + '1'
+                                break
+
+                            elif parttens[p] >= 4:  #
+                                if p.startswith('^(.*?)应当(.*)'):
+                                    pass
+                                if p.startswith('^(.*)是(.*)$'):
+                                    if len(mat.group()) >= 2:
+                                        QianTi.append(mat.group())
+                                        HouCheng.append(mat.group(1))
+                                        last = last + '2';
+                                        break
+
+                                    pass
+
+                                HouCheng.append(mat.group(0))
+                                last = '2'
+                                break
+                    if not MatchFlag:
+                        if len(HouCheng) > 0:
+                            HouCheng.append(Ju)
+                        else:
+                            QianTi.append(Ju)
+
+                line = {
+                    'QianTi': QianTi,
+                    'HouCheng': HouCheng
+                }
+                self.rules.append(line)
