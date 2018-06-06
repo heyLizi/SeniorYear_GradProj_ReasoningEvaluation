@@ -1,0 +1,3 @@
+[submodule "ECNet"]
+	path = ECNet
+	url = https://github.com/LeiDengDengDeng/ECNet-J2EE
